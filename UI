@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LabForge — UR12e Automated Lab</title>
+  <style>
+    :root {
+      --bg: #080d14;
+      --surface: #0e1623;
+      --card: #111d2e;
+      --border: #1a2d45;
+      --accent: #00c8ff;
+      --accent2: #0062ff;
+      --accent3: #7b2fff;
+      --text: #e8f0fe;
+      --muted: #5a7a9a;
+      --success: #00e5a0;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; overflow-x: hidden; }
+
+    nav {
+      position: fixed; top: 0; width: 100%; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 3rem;
+      background: rgba(8,13,20,0.88); backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+    .logo { display: flex; align-items: center; gap: 0.6rem; font-size: 1.2rem; font-weight: 700; }
+    .logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg,var(--accent),var(--accent2)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+    .nav-links { display: flex; gap: 2.5rem; font-size: 0.9rem; }
+    .nav-links a { color: var(--muted); text-decoration: none; transition: color .2s; }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta { background: var(--accent2); color: #fff; border: none; padding: 0.55rem 1.4rem; border-radius: 8px; font-size: 0.9rem; cursor: pointer; transition: opacity .2s; }
+    .nav-cta:hover { opacity: 0.85; }
+
+    .hero {
+      min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr;
+      align-items: center; gap: 2rem; padding: 8rem 3rem 4rem;
+    }
+    .hero-text { max-width: 540px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: rgba(0,200,255,0.08); border: 1px solid rgba(0,200,255,0.25);
+      padding: 0.3rem 0.9rem; border-radius: 100px; font-size: 0.78rem; color: var(--accent); margin-bottom: 1.4rem;
+    }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 1.8s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+    h1 { font-size: clamp(2.2rem,4vw,3.4rem); line-height: 1.1; font-weight: 800; letter-spacing: -1px; margin-bottom: 1.2rem; }
+    h1 span { background: linear-gradient(90deg,var(--accent),var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero-sub { font-size: 1.05rem; color: var(--muted); line-height: 1.7; margin-bottom: 2rem; }
+    .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .btn-primary { background: linear-gradient(135deg,var(--accent2),var(--accent3)); color: #fff; border: none; padding: 0.8rem 2rem; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: transform .2s, box-shadow .2s; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,98,255,.35); }
+    .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); padding: 0.8rem 2rem; border-radius: 10px; font-size: 1rem; cursor: pointer; transition: border-color .2s; }
+    .btn-ghost:hover { border-color: var(--accent); }
+    .hero-stats { display: flex; gap: 2.5rem; margin-top: 2.5rem; }
+    .stat-item .stat-val { font-size: 1.6rem; font-weight: 800; color: var(--accent); }
+    .stat-item .stat-label { font-size: 0.78rem; color: var(--muted); margin-top: 0.1rem; }
+
+    .hero-visual { position: relative; display: flex; align-items: center; justify-content: center; }
+    #robot-canvas {
+      width: 100%; max-width: 600px; height: 520px; border-radius: 24px; display: block;
+      background: radial-gradient(ellipse at 40% 40%,rgba(0,98,255,.08) 0%,rgba(8,13,20,0) 70%),
+                  radial-gradient(ellipse at 70% 70%,rgba(123,47,255,.06) 0%,transparent 60%), var(--card);
+      border: 1px solid var(--border);
+    }
+    .canvas-overlay {
+      position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: rgba(14,22,35,0.85); backdrop-filter: blur(8px);
+      border: 1px solid var(--border); border-radius: 12px;
+      padding: 0.6rem 1.4rem; display: flex; align-items: center; gap: 1.2rem;
+      font-size: 0.78rem; white-space: nowrap;
+    }
+    .canvas-overlay span { color: var(--muted); }
+    .canvas-overlay strong { color: var(--accent); }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); animation: pulse 2s infinite; }
+
+    .section { padding: 6rem 3rem; }
+    .section-label { font-size: 0.78rem; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 0.8rem; }
+    .section-title { font-size: clamp(1.8rem,3vw,2.6rem); font-weight: 800; letter-spacing: -.5px; margin-bottom: 1rem; }
+    .section-sub { color: var(--muted); max-width: 500px; line-height: 1.7; }
+
+    .features-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; margin-top: 3.5rem; }
+    .feature-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 1.8rem; transition: border-color .25s, transform .25s;
+    }
+    .feature-card:hover { border-color: rgba(0,200,255,.3); transform: translateY(-4px); }
+    .feature-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 1.1rem; }
+    .feature-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: .5rem; }
+    .feature-card p { font-size: .87rem; color: var(--muted); line-height: 1.6; }
+
+    .specs-section { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .specs-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
+    .specs-table { width: 100%; border-collapse: collapse; margin-top: 2rem; }
+    .specs-table tr { border-bottom: 1px solid var(--border); }
+    .specs-table tr:last-child { border-bottom: none; }
+    .specs-table td { padding: .85rem 0; font-size: .9rem; }
+    .specs-table td:first-child { color: var(--muted); width: 50%; }
+    .specs-table td:last-child { font-weight: 600; }
+    .spec-highlight { color: var(--accent) !important; }
+    .spec-visual { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 2rem; display: flex; flex-direction: column; gap: 1.2rem; }
+    .spec-bar-label { display: flex; justify-content: space-between; font-size: .82rem; margin-bottom: .4rem; }
+    .spec-bar-label span:last-child { color: var(--accent); font-weight: 600; }
+    .spec-bar-track { height: 6px; background: var(--border); border-radius: 100px; overflow: hidden; }
+    .spec-bar-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg,var(--accent2),var(--accent)); }
+
+    .workflow-steps { display: grid; grid-template-columns: repeat(4,1fr); gap: 0; margin-top: 3.5rem; position: relative; }
+    .workflow-steps::before { content:''; position: absolute; top: 28px; left: 10%; right: 10%; height: 1px; background: linear-gradient(90deg,transparent,var(--border),var(--border),transparent); }
+    .workflow-step { text-align: center; padding: 0 1rem; }
+    .step-num { width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 1.2rem; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; border: 2px solid var(--border); background: var(--card); position: relative; z-index: 1; transition: border-color .2s; }
+    .workflow-step:hover .step-num { border-color: var(--accent); color: var(--accent); }
+    .workflow-step h4 { font-size: .95rem; font-weight: 700; margin-bottom: .4rem; }
+    .workflow-step p { font-size: .82rem; color: var(--muted); line-height: 1.55; }
+
+    .dashboard-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 2rem; margin-top: 3.5rem; align-items: start; }
+    .metric-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .metric-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1.4rem; }
+    .metric-card .metric-val { font-size: 2rem; font-weight: 800; line-height: 1; }
+    .metric-card .metric-label { font-size: .78rem; color: var(--muted); margin-top: .3rem; }
+    .metric-card .metric-trend { font-size: .75rem; color: var(--success); margin-top: .5rem; }
+
+    .status-panel { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 2rem; }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .panel-header h3 { font-size: 1rem; font-weight: 700; }
+    .live-badge { display: flex; align-items: center; gap: .4rem; font-size: .75rem; color: var(--success); }
+    .task-row { display: flex; align-items: center; gap: 1rem; padding: .75rem 0; border-bottom: 1px solid var(--border); }
+    .task-row:last-child { border-bottom: none; }
+    .task-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .task-name { flex: 1; font-size: .88rem; }
+    .task-status { font-size: .75rem; font-weight: 600; padding: .2rem .7rem; border-radius: 100px; }
+    .s-running { background: rgba(0,200,255,.1); color: var(--accent); }
+    .s-queued { background: rgba(90,122,154,.15); color: var(--muted); }
+    .s-done { background: rgba(0,229,160,.1); color: var(--success); }
+    .task-time { font-size: .78rem; color: var(--muted); min-width: 48px; text-align: right; }
+
+    /* CAMERA FEED */
+    .camera-section { padding: 0 3rem 6rem; }
+    .camera-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 2rem; margin-top: 3.5rem; align-items: start; }
+    .camera-frame {
+      background: #000; border: 1px solid var(--border); border-radius: 20px;
+      overflow: hidden; position: relative; aspect-ratio: 16/9;
+    }
+    .camera-frame img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+    .camera-frame .cam-offline {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 0.8rem;
+      background: var(--card); color: var(--muted); font-size: 0.9rem;
+    }
+    .cam-offline .cam-icon { font-size: 2.5rem; opacity: 0.4; }
+    .cam-badge {
+      position: absolute; top: 14px; left: 14px;
+      display: flex; align-items: center; gap: 0.5rem;
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+      padding: 0.3rem 0.8rem; font-size: 0.75rem; font-weight: 600;
+    }
+    .cam-badge.live { color: #ff4444; }
+    .cam-badge.live .rec-dot { width: 7px; height: 7px; border-radius: 50%; background: #ff4444; animation: pulse 1s infinite; }
+    .cam-badge.offline-badge { color: var(--muted); }
+    .cam-controls {
+      position: absolute; bottom: 14px; right: 14px; display: flex; gap: 0.5rem;
+    }
+    .cam-btn {
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+      color: var(--text); padding: 0.4rem 0.8rem; font-size: 0.78rem; cursor: pointer;
+      transition: border-color .2s;
+    }
+    .cam-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .cam-info { display: flex; flex-direction: column; gap: 1rem; }
+    .cam-stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1.3rem; }
+    .cam-stat-card .cs-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; }
+    .cam-stat-card .cs-val { font-size: 1.1rem; font-weight: 700; }
+    .ip-input-row { display: flex; gap: 0.6rem; margin-top: 0.6rem; }
+    .ip-input { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 0.5rem 0.8rem; border-radius: 8px; font-size: 0.85rem; flex: 1; outline: none; transition: border-color .2s; }
+    .ip-input:focus { border-color: var(--accent); }
+    .ip-connect-btn { background: var(--accent2); color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.85rem; cursor: pointer; font-weight: 600; white-space: nowrap; }
+
+    footer { border-top: 1px solid var(--border); padding: 2.5rem 3rem; display: flex; justify-content: space-between; align-items: center; font-size: .82rem; color: var(--muted); }
+    .footer-links { display: flex; gap: 2rem; }
+    .footer-links a { color: var(--muted); text-decoration: none; }
+    .footer-links a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">
+    <div class="logo-icon">⚗</div>
+    LabForge
+  </div>
+  <div class="nav-links">
+    <a href="#">Platform</a>
+    <a href="#">UR12e</a>
+    <a href="#">Integrations</a>
+    <a href="#">Docs</a>
+    <a href="#">Pricing</a>
+  </div>
+  <button class="nav-cta">Request Demo</button>
+</nav>
+
+<section class="hero">
+  <div class="hero-text">
+    <div class="badge"><span class="badge-dot"></span> UR12e Now Available</div>
+    <h1>Lab Automation<br>at <span>Robotic Precision</span></h1>
+    <p class="hero-sub">Deploy the UR12e collaborative robot arm into your lab workflow. Automate pipetting, sample handling, and plate management — 24/7 with zero downtime.</p>
+    <div class="hero-actions">
+      <button class="btn-primary">Get Started Free</button>
+      <button class="btn-ghost">Watch Demo ▶</button>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item"><div class="stat-val">12kg</div><div class="stat-label">Payload</div></div>
+      <div class="stat-item"><div class="stat-val">±0.03mm</div><div class="stat-label">Repeatability</div></div>
+      <div class="stat-item"><div class="stat-val">1300mm</div><div class="stat-label">Reach</div></div>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <canvas id="robot-canvas"></canvas>
+    <div class="canvas-overlay">
+      <div class="status-dot"></div>
+      <span>System status:</span>
+      <strong>Operational</strong>
+      <span>|</span>
+      <span>Cycles:</span>
+      <strong id="cycle-count">0</strong>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-label">Capabilities</div>
+  <div class="section-title">Everything your lab needs</div>
+  <p class="section-sub">From sample intake to result reporting, LabForge handles the full automation stack.</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(0,98,255,.12)">🦾</div>
+      <h3>6-Axis Freedom</h3>
+      <p>Full articulation in confined lab spaces. The UR12e reaches every corner of your workstation without collision zones.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(0,200,255,.1)">🧬</div>
+      <h3>Liquid Handling</h3>
+      <p>Sub-microliter precision pipetting with integrated vision guidance. Compatible with 96 and 384-well plates.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(0,229,160,.1)">📡</div>
+      <h3>Real-Time Monitoring</h3>
+      <p>Live telemetry dashboards, instant alerts, and full audit trails for every sample movement and protocol step.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(123,47,255,.1)">🔌</div>
+      <h3>Open Integrations</h3>
+      <p>Native plugins for Hamilton, Tecan, Beckman, and your LIMS. REST API and MQTT support out of the box.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(255,180,0,.1)">🛡</div>
+      <h3>ISO 15190 Safety</h3>
+      <p>Force-limiting joints, collision detection, and proximity sensing — safe for staff in shared lab environments.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:rgba(0,98,255,.12)">⚡</div>
+      <h3>No-Code Protocols</h3>
+      <p>Drag-and-drop workflow builder. Configure new assay protocols in minutes without writing a single line of code.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section specs-section">
+  <div class="specs-inner">
+    <div>
+      <div class="section-label">Technical Specs</div>
+      <div class="section-title">UR12e Robot Arm</div>
+      <table class="specs-table">
+        <tr><td>Payload</td><td class="spec-highlight">12 kg</td></tr>
+        <tr><td>Reach</td><td>1300 mm</td></tr>
+        <tr><td>Repeatability</td><td class="spec-highlight">±0.03 mm</td></tr>
+        <tr><td>Degrees of Freedom</td><td>6 joints</td></tr>
+        <tr><td>Max TCP Speed</td><td>1.5 m/s</td></tr>
+        <tr><td>Ingress Protection</td><td class="spec-highlight">IP54</td></tr>
+        <tr><td>Collaborative Safety</td><td>ISO/TS 15066</td></tr>
+        <tr><td>Power Consumption</td><td>200 W typical</td></tr>
+        <tr><td>Weight</td><td>28.9 kg</td></tr>
+        <tr><td>Temp. Range</td><td>0 – 50 °C</td></tr>
+      </table>
+    </div>
+    <div class="spec-visual">
+      <div style="font-size:.82rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:1px">Performance Benchmarks</div>
+      <div>
+        <div class="spec-bar-label"><span>Throughput Efficiency</span><span>97%</span></div>
+        <div class="spec-bar-track"><div class="spec-bar-fill" style="width:97%"></div></div>
+      </div>
+      <div>
+        <div class="spec-bar-label"><span>Positioning Accuracy</span><span>99.2%</span></div>
+        <div class="spec-bar-track"><div class="spec-bar-fill" style="width:99.2%"></div></div>
+      </div>
+      <div>
+        <div class="spec-bar-label"><span>Uptime (30-day avg)</span><span>99.8%</span></div>
+        <div class="spec-bar-track"><div class="spec-bar-fill" style="width:99.8%"></div></div>
+      </div>
+      <div>
+        <div class="spec-bar-label"><span>Protocol Success Rate</span><span>98.6%</span></div>
+        <div class="spec-bar-track"><div class="spec-bar-fill" style="width:98.6%"></div></div>
+      </div>
+      <div>
+        <div class="spec-bar-label"><span>Integration Coverage</span><span>84%</span></div>
+        <div class="spec-bar-track"><div class="spec-bar-fill" style="width:84%"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-label">How It Works</div>
+  <div class="section-title">From setup to sample results</div>
+  <div class="workflow-steps">
+    <div class="workflow-step">
+      <div class="step-num">01</div>
+      <h4>Configure Protocol</h4>
+      <p>Define your assay workflow with our drag-and-drop builder or import an existing SOP.</p>
+    </div>
+    <div class="workflow-step">
+      <div class="step-num">02</div>
+      <h4>Load Consumables</h4>
+      <p>Place plates, tips, and reagents. Vision AI verifies deck layout before execution.</p>
+    </div>
+    <div class="workflow-step">
+      <div class="step-num">03</div>
+      <h4>Run & Monitor</h4>
+      <p>UR12e executes autonomously. Live telemetry and alerts keep you informed in real time.</p>
+    </div>
+    <div class="workflow-step">
+      <div class="step-num">04</div>
+      <h4>Export Results</h4>
+      <p>Data automatically syncs to your LIMS, ELN, or cloud storage with full audit trail.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0">
+  <div class="section-label">Live Dashboard</div>
+  <div class="section-title">Visibility into every run</div>
+  <div class="dashboard-grid">
+    <div class="metric-cards">
+      <div class="metric-card">
+        <div class="metric-val" style="color:var(--accent)" id="m-samples">2,841</div>
+        <div class="metric-label">Samples Processed Today</div>
+        <div class="metric-trend">↑ 12% vs yesterday</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val" style="color:var(--success)">99.8%</div>
+        <div class="metric-label">System Uptime</div>
+        <div class="metric-trend">↑ 0.2% this week</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">7</div>
+        <div class="metric-label">Protocols In Queue</div>
+        <div class="metric-trend" style="color:var(--muted)">Next: Plate Wash 14:22</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val" style="color:var(--accent3)">±0.03</div>
+        <div class="metric-label">mm Repeatability</div>
+        <div class="metric-trend">Within spec</div>
+      </div>
+    </div>
+    <div class="status-panel">
+      <div class="panel-header">
+        <h3>Active Protocols</h3>
+        <div class="live-badge"><div class="status-dot" style="width:6px;height:6px"></div> Live</div>
+      </div>
+      <div class="task-row">
+        <div class="task-dot" style="background:var(--accent);animation:pulse 1.5s infinite"></div>
+        <div class="task-name">96-Well Liquid Transfer</div>
+        <div class="task-status s-running">Running</div>
+        <div class="task-time">2:14</div>
+      </div>
+      <div class="task-row">
+        <div class="task-dot" style="background:var(--accent);animation:pulse 1.5s infinite .3s"></div>
+        <div class="task-name">Plate Stacker Reload</div>
+        <div class="task-status s-running">Running</div>
+        <div class="task-time">0:47</div>
+      </div>
+      <div class="task-row">
+        <div class="task-dot" style="background:var(--muted)"></div>
+        <div class="task-name">PCR Prep — Batch 12</div>
+        <div class="task-status s-queued">Queued</div>
+        <div class="task-time">14:22</div>
+      </div>
+      <div class="task-row">
+        <div class="task-dot" style="background:var(--muted)"></div>
+        <div class="task-name">Reagent Replenishment</div>
+        <div class="task-status s-queued">Queued</div>
+        <div class="task-time">15:00</div>
+      </div>
+      <div class="task-row">
+        <div class="task-dot" style="background:var(--success)"></div>
+        <div class="task-name">ELISA Plate Read</div>
+        <div class="task-status s-done">Complete</div>
+        <div class="task-time">Done</div>
+      </div>
+      <div class="task-row">
+        <div class="task-dot" style="background:var(--success)"></div>
+        <div class="task-name">Cell Viability Assay</div>
+        <div class="task-status s-done">Complete</div>
+        <div class="task-time">Done</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MICROSCOPE IMAGE VIEWER -->
+<section class="camera-section">
+  <div class="section-label">Microscope</div>
+  <div class="section-title">Microscope Captures</div>
+  <div class="camera-grid">
+    <div class="camera-frame" id="cam-frame">
+      <img id="mic-img" alt="Microscope capture" style="display:none;width:100%;height:100%;object-fit:contain;background:#000;" />
+      <div id="cam-offline" class="cam-offline" style="display:none">
+        <div class="cam-icon">🔬</div>
+        <div>No image yet</div>
+      </div>
+      <div class="cam-badge" style="display:flex;color:var(--success);background:rgba(0,229,160,0.12);border-color:rgba(0,229,160,0.3)">
+        <div class="rec-dot" style="background:var(--success)"></div> 62 mins : 85% Confluency
+      </div>
+      <div id="cam-offline-badge" class="cam-badge offline-badge" style="display:none">⚫ SERVER OFFLINE</div>
+      <div class="cam-controls">
+        <button class="cam-btn" id="cap-btn" onclick="captureNew()">📷 Capture</button>
+        <button class="cam-btn" onclick="downloadImage()">📥 Save</button>
+        <button class="cam-btn" onclick="toggleFullscreen()">⛶ Fullscreen</button>
+      </div>
+    </div>
+
+    <div class="cam-info">
+      <div class="cam-stat-card">
+        <div class="cs-label">Server Status</div>
+        <div class="cs-val" id="mic-status" style="color:var(--muted)">Checking…</div>
+      </div>
+      <div class="cam-stat-card">
+        <div class="cs-label">Last Captured</div>
+        <div class="cs-val" id="last-snap" style="font-size:0.9rem;color:var(--muted)">—</div>
+      </div>
+      <div class="cam-stat-card">
+        <div class="cs-label">Total Captures</div>
+        <div class="cs-val" id="total-caps" style="color:var(--accent)">0</div>
+      </div>
+      <div class="cam-stat-card">
+        <div class="cs-label">How to start</div>
+        <div style="font-size:0.82rem;color:var(--muted);line-height:1.8;margin-top:0.3rem">
+          1. Open a terminal<br>
+          2. <code style="color:var(--accent);background:rgba(0,200,255,0.08);padding:0.1rem 0.4rem;border-radius:4px">cd lab-automation-ui</code><br>
+          3. <code style="color:var(--accent);background:rgba(0,200,255,0.08);padding:0.1rem 0.4rem;border-radius:4px">python microscope_server.py</code><br>
+          4. Click <strong style="color:var(--accent)">Capture</strong> above
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="logo"><div class="logo-icon">⚗</div> LabForge</div>
+  <div class="footer-links">
+    <a href="#">Privacy</a><a href="#">Terms</a><a href="#">Security</a><a href="#">Status</a><a href="#">Contact</a>
+  </div>
+  <div>© 2026 LabForge Inc. All rights reserved.</div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+<script>
+(function () {
+  const canvas = document.getElementById('robot-canvas');
+  const W = canvas.offsetWidth, H = canvas.offsetHeight;
+  canvas.width = W * window.devicePixelRatio;
+  canvas.height = H * window.devicePixelRatio;
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(W, H);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 100);
+  camera.position.set(2.8, 2.2, 3.5);
+  camera.lookAt(0, 1.2, 0);
+
+  scene.add(new THREE.AmbientLight(0x0d1a2d, 2));
+  const key = new THREE.DirectionalLight(0x00c8ff, 3.5);
+  key.position.set(3, 5, 3); key.castShadow = true;
+  key.shadow.mapSize.set(1024, 1024);
+  scene.add(key);
+  const fill = new THREE.DirectionalLight(0x0062ff, 1.5);
+  fill.position.set(-3, 2, -2); scene.add(fill);
+  const rim = new THREE.DirectionalLight(0x7b2fff, 2);
+  rim.position.set(0, -1, -4); scene.add(rim);
+  const bottom = new THREE.PointLight(0x00e5a0, 0.8, 8);
+  bottom.position.set(0, -1, 1); scene.add(bottom);
+
+  const matBody = new THREE.MeshStandardMaterial({ color: 0x1a2a3a, metalness: 0.85, roughness: 0.18 });
+  const matJoint = new THREE.MeshStandardMaterial({ color: 0x0e1c2c, metalness: 0.9, roughness: 0.1 });
+  const matAccent = new THREE.MeshStandardMaterial({ color: 0x00c8ff, metalness: 0.6, roughness: 0.3, emissive: 0x004466, emissiveIntensity: 0.5 });
+  const matBase = new THREE.MeshStandardMaterial({ color: 0x0a1520, metalness: 0.7, roughness: 0.3 });
+
+  const cyl = (rt, rb, h, mat, s = 32) => new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, s), mat);
+  const box = (w, h, d, mat) => new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  const tor = (r, t, mat) => new THREE.Mesh(new THREE.TorusGeometry(r, t, 16, 48), mat);
+
+  const root = new THREE.Group();
+  scene.add(root);
+
+  // Base
+  const base = cyl(0.55, 0.65, 0.12, matBase); base.position.y = 0.06; root.add(base);
+  const baseCol = cyl(0.42, 0.42, 0.22, matBody); baseCol.position.y = 0.23; root.add(baseCol);
+  const baseRing = tor(0.42, 0.025, matAccent); baseRing.rotation.x = Math.PI / 2; baseRing.position.y = 0.28; root.add(baseRing);
+
+  // J1 shoulder
+  const j1 = new THREE.Group(); j1.position.y = 0.36; root.add(j1);
+  const shoulder = cyl(0.38, 0.38, 0.28, matJoint); shoulder.rotation.z = Math.PI / 2; j1.add(shoulder);
+  const sCap1 = cyl(0.18, 0.22, 0.06, matAccent); sCap1.rotation.z = Math.PI / 2; sCap1.position.x = 0.17; j1.add(sCap1);
+  const sCap2 = sCap1.clone(); sCap2.position.x = -0.17; j1.add(sCap2);
+
+  // Upper arm
+  const j2 = new THREE.Group(); j2.position.set(0.28, 0, 0); j1.add(j2);
+  const ua = cyl(0.1, 0.1, 0.82, matBody); ua.rotation.z = Math.PI / 2; ua.position.x = 0.41; j2.add(ua);
+  const s1 = cyl(0.105, 0.105, 0.06, matAccent); s1.rotation.z = Math.PI / 2; s1.position.x = 0.28; j2.add(s1);
+  const s2 = s1.clone(); s2.position.x = 0.58; j2.add(s2);
+
+  // Elbow
+  const j3 = new THREE.Group(); j3.position.set(0.84, 0, 0); j2.add(j3);
+  const elbow = cyl(0.14, 0.14, 0.26, matJoint); elbow.rotation.z = Math.PI / 2; j3.add(elbow);
+  const eRing = tor(0.14, 0.018, matAccent); eRing.rotation.x = Math.PI / 2; j3.add(eRing);
+
+  // Forearm
+  const j4 = new THREE.Group(); j4.position.set(0.14, 0, 0); j3.add(j4);
+  const fa = cyl(0.09, 0.09, 0.65, matBody); fa.rotation.z = Math.PI / 2; fa.position.x = 0.325; j4.add(fa);
+  const s3 = cyl(0.095, 0.095, 0.05, matAccent); s3.rotation.z = Math.PI / 2; s3.position.x = 0.18; j4.add(s3);
+
+  // Wrist 1
+  const j5 = new THREE.Group(); j5.position.set(0.65, 0, 0); j4.add(j5);
+  const w1 = cyl(0.12, 0.12, 0.18, matJoint); w1.rotation.z = Math.PI / 2; j5.add(w1);
+
+  // Wrist 2
+  const j6 = new THREE.Group(); j6.position.set(0.09, 0, 0); j5.add(j6);
+  const w2 = cyl(0.11, 0.11, 0.14, matBody); j6.add(w2);
+  const wR = tor(0.11, 0.015, matAccent); wR.rotation.x = Math.PI / 2; wR.position.y = 0.05; j6.add(wR);
+
+  // Tool flange + gripper
+  const j7 = new THREE.Group(); j7.position.set(0, 0.14, 0); j6.add(j7);
+  const flange = cyl(0.09, 0.09, 0.06, matJoint); j7.add(flange);
+  const gBase = cyl(0.07, 0.07, 0.04, matJoint); gBase.position.y = 0.05; j7.add(gBase);
+
+  function makeFinger(xOff) {
+    const g = new THREE.Group();
+    const upper = box(0.025, 0.12, 0.04, matBody); upper.position.y = 0.09; g.add(upper);
+    const lower = box(0.02, 0.09, 0.035, matAccent); lower.position.y = 0.165; g.add(lower);
+    g.position.x = xOff; return g;
+  }
+  const f1 = makeFinger(0.055); j7.add(f1);
+  const f2 = makeFinger(-0.055); j7.add(f2);
+
+  // Lab plate
+  const plate = box(0.18, 0.015, 0.12, new THREE.MeshStandardMaterial({ color: 0x002244, metalness: 0.1, roughness: 0.8, transparent: true, opacity: 0.85 }));
+  plate.position.y = 0.31; j7.add(plate);
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) {
+    const well = cyl(0.01, 0.01, 0.012, new THREE.MeshStandardMaterial({ color: 0x00c8ff, emissive: 0x003344, emissiveIntensity: 0.4 }));
+    well.position.set(-0.06 + c * 0.04, 0.315, -0.04 + r * 0.04); j7.add(well);
+  }
+
+  // Floor
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(2, 64), new THREE.MeshStandardMaterial({ color: 0x040810 }));
+  floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+
+  const glow = new THREE.PointLight(0x00c8ff, 1.2, 2.5);
+  glow.position.set(0, 0.05, 0); scene.add(glow);
+
+  let t = 0, cycles = 0, lastCycle = 0;
+
+  function animate() {
+    requestAnimationFrame(animate);
+    t += 0.008;
+    j1.rotation.y = Math.sin(t * 0.4) * 0.6;
+    j2.rotation.z = -0.3 + Math.sin(t * 0.5 + 0.5) * 0.25;
+    j3.rotation.z = 0.6 + Math.sin(t * 0.6 + 1.0) * 0.3;
+    j4.rotation.x = Math.sin(t * 0.7 + 2.0) * 0.4;
+    j5.rotation.z = Math.sin(t * 0.9 + 0.8) * 0.35;
+    j6.rotation.y = t * 0.6;
+    const grip = Math.max(0, Math.sin(t * 1.2)) * 0.02;
+    f1.position.x = 0.055 + grip;
+    f2.position.x = -0.055 - grip;
+    glow.intensity = 0.8 + Math.sin(t * 2) * 0.4;
+    if (t - lastCycle > 4) { lastCycle = t; document.getElementById('cycle-count').textContent = ++cycles; }
+    camera.position.x = 2.8 * Math.cos(t * 0.04);
+    camera.position.z = 3.5 * Math.sin(t * 0.04 + 0.5);
+    camera.lookAt(0, 1.2, 0);
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  setInterval(() => {
+    const el = document.getElementById('m-samples');
+    el.textContent = (parseInt(el.textContent.replace(',', '')) + Math.floor(Math.random() * 3 + 1)).toLocaleString();
+  }, 3000);
+})();
+
+const MICROSCOPE = 'http://localhost:5050';
+let captureCount = 0;
+let lastBlob = null;
+
+function setServerOnline() {
+  document.getElementById('cam-offline-badge').style.display = 'none';
+  document.getElementById('mic-status').textContent = 'Online — ready to capture';
+  document.getElementById('mic-status').style.color = 'var(--success)';
+}
+
+function setServerOffline() {
+  document.getElementById('cam-offline-badge').style.display = 'flex';
+  document.getElementById('mic-status').textContent = 'Offline — run microscope_server.py';
+  document.getElementById('mic-status').style.color = 'var(--muted)';
+}
+
+function showImage(blob, ts) {
+  const url = URL.createObjectURL(blob);
+  const img = document.getElementById('mic-img');
+  img.src = url;
+  img.style.display = 'block';
+  document.getElementById('cam-offline').style.display = 'none';
+  document.getElementById('cam-ts-badge').style.display = 'flex';
+  document.getElementById('cam-ts-text').textContent = ts;
+  document.getElementById('last-snap').textContent = ts;
+  document.getElementById('last-snap').style.color = 'var(--success)';
+  lastBlob = blob;
+}
+
+function captureNew() {
+  const btn = document.getElementById('cap-btn');
+  btn.textContent = '⏳ Capturing…';
+  btn.disabled = true;
+  fetch(MICROSCOPE + '/capture')
+    .then(r => {
+      if (!r.ok) throw new Error('Capture failed');
+      const ts = r.headers.get('X-Timestamp') || new Date().toLocaleString();
+      return r.blob().then(blob => ({ blob, ts }));
+    })
+    .then(({ blob, ts }) => {
+      captureCount++;
+      document.getElementById('total-caps').textContent = captureCount;
+      showImage(blob, ts);
+    })
+    .catch(e => {
+      alert('Capture failed — is microscope_server.py running?\n' + e.message);
+    })
+    .finally(() => {
+      btn.textContent = '📷 Capture';
+      btn.disabled = false;
+    });
+}
+
+function downloadImage() {
+  if (!lastBlob) { alert('No image captured yet.'); return; }
+  const ts = new Date().toISOString().replace(/[:.]/g, '-');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(lastBlob);
+  a.download = 'microscope_' + ts + '.jpg';
+  a.click();
+}
+
+function toggleFullscreen() {
+  const frame = document.getElementById('cam-frame');
+  if (!document.fullscreenElement) frame.requestFullscreen();
+  else document.exitFullscreen();
+}
+
+// Check server status + load existing image on page load
+function checkStatus() {
+  fetch(MICROSCOPE + '/status')
+    .then(r => r.json())
+    .then(d => {
+      setServerOnline();
+      // Load existing image if available and none shown yet
+      if (d.hasImage && document.getElementById('mic-img').style.display === 'none') {
+        fetch(MICROSCOPE + '/image?t=' + Date.now())
+          .then(r => r.blob())
+          .then(blob => showImage(blob, 'Previous capture'));
+      }
+    })
+    .catch(() => setServerOffline());
+}
+
+// Load image immediately on page open
+const _img = document.getElementById('mic-img');
+_img.src = '/image?t=' + Date.now();
+_img.style.display = 'block';
+_img.onerror = () => { _img.style.display = 'none'; document.getElementById('cam-offline').style.display = 'flex'; };
+
+checkStatus();
+setInterval(checkStatus, 4000);
+</script>
+</body>
+</html>
