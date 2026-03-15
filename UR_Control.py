@@ -8,11 +8,12 @@ import socket
 from robotiq_gripper_control import RobotiqGripper
 from rtde_control import RTDEControlInterface
 from rtde_receive import RTDEReceiveInterface
+# from microscope import save_image
 
+# save_image()
 
 ROBOT_IP = "192.168.12.52"  # change to your robotâ€™s IP
 PORT = 63352            # Robotiq URCap port
-
 
 # NEUTRAL_POSE = [-0.368, 0.16622, 0.78466, 0.906, 2.629, -2.443]
 # NEUTRAL_POSE2 = [0.3, 0.6, 0.5, 3.18, 0.47, -0.148]

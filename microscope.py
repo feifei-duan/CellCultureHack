@@ -32,30 +32,90 @@ import cv2
 
 
 
+# import cv2
+# from datetime import datetime
+
+# timestamp = datetime.now()
+# timestamp_text = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+# output_path = "microscope_capture.jpg"
+
+# cap = cv2.VideoCapture(0)  # try 0, 1, 2...
+# if not cap.isOpened():
+#     raise RuntimeError("Could not open camera")
+
+# # Grab a single frame
+# ok, frame = cap.read()
+# cap.release()
+
+# if not ok:
+#     raise RuntimeError("Could not read frame from camera")
+
+# # Put timestamp on the image
+# cv2.putText(
+#     frame,
+#     timestamp_text,                 # text
+#     (10, 30),                      # position: x, y
+#     cv2.FONT_HERSHEY_SIMPLEX,      # font
+#     1.0,                           # font scale
+#     (255, 255, 255),               # color: white
+#     2,                             # thickness
+#     cv2.LINE_AA                    # smoother lines
+# )
+
+# # Save stamped image
+# cv2.imwrite(output_path, frame)
+
+# # Display stamped image
+# img = cv2.imread(output_path)
+# if img is None:
+#     raise RuntimeError(f"Could not load saved image: {output_path}")
+
+# cv2.imshow("Saved Image", img)
+# cv2.waitKey(0)
+# cv2.destroyAllWindows()
+
+
+
+
+
+
 import cv2
+from datetime import datetime
 
-output_path = "microscope_capture.jpg"
 
-cap = cv2.VideoCapture(0)  # try 0, 1, 2...
-if not cap.isOpened():
-    raise RuntimeError("Could not open camera")
+def save_image():
+    timestamp = datetime.now()
+    timestamp_text = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+    output_path = "microscope_capture.jpg"
 
-# Grab a single frame
-ok, frame = cap.read()
-cap.release()
+    cap = cv2.VideoCapture(0)  # try 0, 1, 2...
+    if not cap.isOpened():
+        raise RuntimeError("Could not open camera")
 
-if not ok:
-    raise RuntimeError("Could not read frame from camera")
+    # Grab a single frame
+    ok, frame = cap.read()
+    cap.release()
 
-# Save to disk
-cv2.imwrite(output_path, frame)
+    if not ok:
+        raise RuntimeError("Could not read frame from camera")
 
-# Load it back from disk
-img = cv2.imread(output_path)
-if img is None:
-    raise RuntimeError(f"Could not load saved image: {output_path}")
+    # Put timestamp on the image
+    cv2.putText(
+        frame,
+        timestamp_text,
+        (10, 30),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1.0,
+        (255, 255, 255),
+        2,
+        cv2.LINE_AA
+    )
 
-# Display the saved image
-cv2.imshow("Saved Image", img)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+    # Save stamped image only
+    success = cv2.imwrite(output_path, frame)
+    if not success:
+        raise RuntimeError(f"Could not save image: {output_path}")
+
+
+
+save_image()
